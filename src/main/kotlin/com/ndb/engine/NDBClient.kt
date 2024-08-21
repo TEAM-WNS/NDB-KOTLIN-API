@@ -2,7 +2,7 @@ package com.ndb.engine
 
 import com.ndb.engine.requests.Requests
 import com.ndb.engine.roles.Roles
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.*
 
 class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, val coll: String) {
     val dbUrl = ndb.uri + "/ndb/collection?id=$id&pw=$pw&dbName=$db&collectionName=$coll"
@@ -64,5 +64,44 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
         return res
     }
 
+    fun findDocument(key: String): JsonObject? {
+        val json = getWholeDocument()
+        val document: JsonObject? = json!![key]?.jsonObject
+        return document
+    }
+
+    fun findOne(document: JsonObject, field: String): JsonElement? {
+        return document[field]
+    }
+
+    fun editField(documentKey: String, field: String, value: Any) {
+        deleteDocumentFieldValue(documentKey, field)
+        if (value is JsonObject) {
+            addDocumentFieldArray(documentKey, Pair(field, value))
+        } else {
+            addDocumentFieldValue(documentKey, Pair(field, value))
+        }
+
+    }
+
+    fun editMapToJsonObject(map: Map<*, *>): JsonObject {
+        val jsonMap = map.mapNotNull { (key, value) ->
+            if (key is String) {
+                val jsonElement = when (value) {
+                    is Map<*, *> -> editMapToJsonObject(value)
+                    is List<*> -> JsonArray(value.mapNotNull { JsonPrimitive(it.toString()) })
+                    is Number -> JsonPrimitive(value)
+                    is Boolean -> JsonPrimitive(value)
+                    is String -> JsonPrimitive(value)
+                    else -> JsonNull
+                }
+                key to jsonElement
+            } else {
+                null
+            }
+        }.toMap()
+
+        return JsonObject(jsonMap)
+    }
 
 }
