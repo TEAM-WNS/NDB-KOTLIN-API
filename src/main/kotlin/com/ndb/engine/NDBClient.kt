@@ -34,7 +34,7 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
         return res
     }
 
-    fun addDocumentFieldArray(documentKey: String, field: Pair<String, JsonObject>): JsonObject? {
+    fun addDocumentFieldArrayOrList(documentKey: String, field: Pair<String, Any>): JsonObject? {
         val res =
             Requests.get(dbUrl + "&findBy=${documentKey}&addField=${field.first}&fieldArray=${field.second.toString()}")
         return res
@@ -60,7 +60,7 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
         return res
     }
     fun deleteDocument(key: String): JsonObject? {
-        val res = Requests.get(dbUrl + "&deleteKey=$key")
+        val res = Requests.get("$dbUrl&deleteKey=$key")
         return res
     }
 
@@ -70,16 +70,25 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
         return document
     }
 
-    fun findOne(document: JsonObject, field: String): JsonElement? {
+    fun getFieldValue(document: JsonObject, field: String): JsonElement? {
         return document[field]
     }
 
-    fun editField(documentKey: String, field: String, value: Any) {
+    fun editOrInsertField(documentKey: String, field: String, value: Any): JsonObject? {
         deleteDocumentFieldValue(documentKey, field)
-        if (value is JsonObject) {
-            addDocumentFieldArray(documentKey, Pair(field, value))
+        return if (value is JsonObject) {
+            addDocumentFieldArrayOrList(documentKey, Pair(field, value))
         } else {
             addDocumentFieldValue(documentKey, Pair(field, value))
+        }
+
+    }
+    fun editOrInsertFieldAsStrict(documentKey: String, field: String, value: Any): JsonObject? {
+        deleteDocumentFieldValue(documentKey, field)
+        return if (value is JsonObject) {
+            addDocumentFieldArrayOrList(documentKey, Pair(field, value))
+        } else {
+            addDocumentFieldValueAsStrictMode(documentKey, Pair(field, value))
         }
 
     }
@@ -90,7 +99,7 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
                 val jsonElement = when (value) {
                     is Map<*, *> -> editMapToJsonObject(value)
                     is List<*> -> JsonArray(value.mapNotNull { JsonPrimitive(it.toString()) })
-                    is Number -> JsonPrimitive(value)
+                    is Int -> JsonPrimitive(value)
                     is Boolean -> JsonPrimitive(value)
                     is String -> JsonPrimitive(value)
                     else -> JsonNull
@@ -103,5 +112,26 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
 
         return JsonObject(jsonMap)
     }
+
+    fun editListToArray(list: List<*>): List<JsonElement> {
+        return list.map { value ->
+            when (value) {
+                is String -> {
+                    try {
+                        val parsedList = value.split(",").map { it.trim().toInt() }
+                        parsedList.map { JsonPrimitive(it) }
+                    } catch (e: NumberFormatException) {
+                        listOf(JsonPrimitive(value))
+                    }
+                }
+                is Map<*, *> -> listOf(editMapToJsonObject(value))
+                is List<*> -> editListToArray(value)
+                is Number -> listOf(JsonPrimitive(value))
+                is Boolean -> listOf(JsonPrimitive(value))
+                else -> listOf(JsonNull)
+            }
+        }.flatten()
+    }
+
 
 }
