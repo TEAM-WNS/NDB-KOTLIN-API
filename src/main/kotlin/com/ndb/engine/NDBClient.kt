@@ -99,7 +99,7 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
                 val jsonElement = when (value) {
                     is Map<*, *> -> editMapToJsonObject(value)
                     is List<*> -> JsonArray(value.mapNotNull { JsonPrimitive(it.toString()) })
-                    is Int -> JsonPrimitive(value)
+                    is Number -> JsonPrimitive(value)
                     is Boolean -> JsonPrimitive(value)
                     is String -> JsonPrimitive(value)
                     else -> JsonNull
