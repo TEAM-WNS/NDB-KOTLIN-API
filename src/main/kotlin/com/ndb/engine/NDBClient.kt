@@ -3,7 +3,6 @@ package com.ndb.engine
 import com.ndb.engine.requests.Requests
 import com.ndb.engine.roles.Roles
 import kotlinx.serialization.json.JsonObject
-import kotlin.reflect.typeOf
 
 class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, val coll: String) {
     val dbUrl = ndb.uri + "/ndb/collection?id=$id&pw=$pw&dbName=$db&collectionName=$coll"
