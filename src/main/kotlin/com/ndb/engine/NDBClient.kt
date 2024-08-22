@@ -93,6 +93,24 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
 
     }
 
+    fun getAllDocumentsAsMap(jsonObject: JsonObject): Map<String, JsonObject> {
+        return jsonObject.mapValues { (_, value) ->
+            value.jsonObject
+        }
+    }
+
+    companion object {
+        infix fun String.into(str: String): Pair<String, String> {
+            return Pair(this, str)
+        }
+    }
+
+    fun replaceDocumentName(strMap: Pair<String, String>): JsonObject? {
+        val docum = getDocument(strMap.first)
+        deleteDocument(strMap.first)
+        return addOrReplaceDocument(strMap.second, docum!!)
+    }
+
     fun editMapToJsonObject(map: Map<*, *>): JsonObject {
         val jsonMap = map.mapNotNull { (key, value) ->
             if (key is String) {
