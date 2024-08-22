@@ -1,5 +1,6 @@
 package com.ndb.engine
 
+import com.ndb.engine.options.StrictOptions
 import com.ndb.engine.requests.Requests
 import com.ndb.engine.roles.Roles
 import kotlinx.serialization.json.*
@@ -41,14 +42,14 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
     }
 
     fun addDocumentFieldValue(documentKey: String, field: Pair<String, Any>): JsonObject? {
-        val res = Requests.get(dbUrl + "&findBy=${documentKey}&addField=${field.first}&fieldValue=${field.second}&isStrict=false")
+        val res = Requests.get(dbUrl + "&findBy=${documentKey}&addField=${field.first}&fieldValue=${field.second}&${ndb.option}")
+        return res
+    }
+    fun addDocumentFieldValueForceStrict(documentKey: String, field: Pair<String, Any>): JsonObject? {
+        val res = Requests.get(dbUrl + "&findBy=${documentKey}&addField=${field.first}&fieldValue=${field.second}&${StrictOptions.STRICT}")
         return res
     }
 
-    fun addDocumentFieldValueAsStrictMode(documentKey: String, field: Pair<String, Any>): JsonObject? {
-        val res = Requests.get(dbUrl + "&findBy=${documentKey}&addField=${field.first}&fieldValue=${field.second}&isStrict=true")
-        return res
-    }
 
     fun deleteDocumentFieldValue(documentKey: String, field: String): JsonObject? {
         val res = Requests.get(dbUrl + "&findBy=${documentKey}&deleteField=$field")
@@ -56,6 +57,10 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
     }
 
     fun addOrReplaceDocument(key: String, value: JsonObject): JsonObject? {
+        val res = Requests.get(dbUrl + "&addKey=$key&keyValue=${value.toString()}")
+        return res
+    }
+    fun addOrReplaceDocumentForceStrict(key: String, value: JsonObject): JsonObject? {
         val res = Requests.get(dbUrl + "&addKey=$key&keyValue=${value.toString()}")
         return res
     }
@@ -83,12 +88,12 @@ class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, va
         }
 
     }
-    fun editOrInsertFieldAsStrict(documentKey: String, field: String, value: Any): JsonObject? {
+    fun editOrInsertFieldForceStrict(documentKey: String, field: String, value: Any): JsonObject? {
         deleteDocumentFieldValue(documentKey, field)
         return if (value is JsonObject) {
             addDocumentFieldArrayOrList(documentKey, Pair(field, value))
         } else {
-            addDocumentFieldValueAsStrictMode(documentKey, Pair(field, value))
+            addDocumentFieldValueForceStrict(documentKey, Pair(field, value))
         }
 
     }
