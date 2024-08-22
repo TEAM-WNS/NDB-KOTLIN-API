@@ -5,10 +5,18 @@ import com.ndb.engine.requests.Requests
 import com.ndb.engine.roles.Roles
 import kotlinx.serialization.json.*
 
-class NDBClient(val ndb: NDB, val id: String, val pw: String, val db: String, val coll: String) {
-    val dbUrl = ndb.uri + "/ndb/collection?id=$id&pw=$pw&dbName=$db&collectionName=$coll"
-    val manageUrl = ndb.uri + "/ndb/create?id=$id&pw=$pw"
+class NDBClient(val ndb: NDB, val id: String, val pw: String) {
+    lateinit var db: String
+    lateinit var coll: String
+    lateinit var dbUrl: String
+    lateinit var manageUrl: String
 
+    fun build(database: String, collection: String) {
+        db = database
+        coll = collection
+        dbUrl = ndb.uri + "/ndb/collection?id=$id&pw=$pw&dbName=$db&collectionName=$coll"
+        manageUrl = ndb.uri + "/ndb/create?id=$id&pw=$pw"
+    }
     fun createUser(id: String, pw: String, roles: Roles): JsonObject? {
         val creationString = "$id:$pw:${roles.role}"
         val res = Requests.get("$manageUrl&user=$creationString")
